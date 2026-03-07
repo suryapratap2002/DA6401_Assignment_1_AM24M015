@@ -72,7 +72,7 @@ python src/train.py -d fashion_mnist -e 20 -o adam -lr 0.001 -nhl 3 -sz 128 -a r
 ------------------------------------------------------------------------
 
 # Command Line Arguments
-
+```bash
   ---------------------------------------------------------------------------------------
   Short Flag      Long Flag         Default         Description      Possible Values
   --------------- ----------------- --------------- ---------------- --------------------
@@ -109,7 +109,7 @@ python src/train.py -d fashion_mnist -e 20 -o adam -lr 0.001 -nhl 3 -sz 128 -a r
   -w_i            --weight_init     xavier          Weight           random, xavier
                                                     initialization   
   ---------------------------------------------------------------------------------------
-
+```
 ### Saved Outputs
 
 After training, the following files are saved:
