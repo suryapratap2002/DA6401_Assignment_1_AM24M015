@@ -128,13 +128,13 @@ python src/inference.py --model_path models/best_model.npy --config_path models/
 ```
 
 This prints:
-
+``` bash
 -   Accuracy
 -   Precision
 -   Recall
 -   F1-score
 -   Confusion Matrix
-
+```
 ------------------------------------------------------------------------
 
 # Numerical Gradient Check
@@ -204,7 +204,7 @@ The gradient uses the softmax Jacobian:
 ------------------------------------------------------------------------
 
 # Supported Optimizers
-
+``` bash
   Optimizer   Hyperparameters
   ----------- -----------------------------------------------
   SGD         learning_rate
@@ -213,12 +213,13 @@ The gradient uses the softmax Jacobian:
   RMSProp     learning_rate, β = 0.9, ε = 1e-8
   Adam        learning_rate, β₁ = 0.9, β₂ = 0.999, ε = 1e-8
   Nadam       learning_rate, β₁ = 0.9, β₂ = 0.999, ε = 1e-8
-
+```
 ------------------------------------------------------------------------
 
 # Datasets
-
+``` bash
   Dataset         Classes                  Image Size
   --------------- ------------------------ ------------
   MNIST           10 digits                28 × 28
   Fashion-MNIST   10 clothing categories   28 × 28
+```
