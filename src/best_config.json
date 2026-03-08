@@ -1,0 +1,15 @@
+{
+  "dataset": "mnist",
+  "epochs": 20,
+  "batch_size": 64,
+  "loss": "cross_entropy",
+  "optimizer": "adam",
+  "learning_rate": 0.001,
+  "weight_decay": 0,
+  "num_layers": 3,
+  "hidden_size": 128,
+  "activation": "relu",
+  "weight_init": "xavier",
+  "best_test_f1": 0.979393,
+  "best_epoch": 8
+}
