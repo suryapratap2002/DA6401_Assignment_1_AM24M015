@@ -114,8 +114,8 @@ python src/train.py -d fashion_mnist -e 20 -o adam -lr 0.001 -nhl 3 -sz 128 -a r
 
 After training, the following files are saved:
 
-    models/best_model.npy
-    models/best_config.json
+    src/best_model.npy
+    src/best_config.json
 
 ------------------------------------------------------------------------
 
@@ -142,35 +142,13 @@ This prints:
 To verify the correctness of the backpropagation implementation:
 
 ``` bash
-python src/train.py --grad_check
+python src/gradient_check.py
 ```
 
 This compares analytical gradients from backpropagation with numerical
 gradients using central difference.
 
-Tolerance used: **1e-5**
-
-------------------------------------------------------------------------
-
-# Hyperparameter Sweep
-
-Run a W&B sweep with at least 100 experiments:
-
-``` bash
-python src/sweep.py --wandb_project da6401-assignment1 --count 100
-```
-
-------------------------------------------------------------------------
-
-# W&B Analysis Plots
-
-After experiments finish, generate plots for the assignment report:
-
-``` bash
-python src/wandb_analysis.py --wandb_project da6401-assignment1 --dataset mnist
-```
-
-This generates the figures required for **Sections 2.1 -- 2.9**.
+Tolerance used: **1e-7**
 
 ------------------------------------------------------------------------
 
