@@ -2,9 +2,9 @@
 
 ## Multi-Layer Perceptron for Image Classification
 
-**GitHub Repository:** -- "https://github.com/suryapratap2002/DA6401_Assignment_1_AM24M015"
+**GitHub Repository:** --https://github.com/suryapratap2002/DA6401_Assignment_1_AM24M015
 
-**Weights & Biases Report:** 
+**Weights & Biases Report:** -- https://api.wandb.ai/links/spsinghiitian2020-iitmaana/detvpooi
 
 ------------------------------------------------------------------------
 
