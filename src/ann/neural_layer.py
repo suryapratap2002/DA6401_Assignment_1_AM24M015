@@ -1,69 +1,47 @@
 import numpy as np
-from ann.activations import get_activation, softmax
+from .activations import ACTIVATIONS, ACTIVATION_DERIVATIVES
 
-
-class NeuralLayer:
-
-    def __init__(self, in_features, out_features, activation="relu", weight_init="xavier"):
-        self.in_features = in_features
-        self.out_features = out_features
+class Layer:
+    def __init__(self, input_size, output_size, activation='relu', weight_init='xavier'):
+        self.input_size = input_size
+        self.output_size = output_size
         self.activation_name = activation
-        self.weight_init = weight_init
 
-        self.W, self.b = self._init_weights()
-
-        if activation == "output":
-            self._act_fn = None
-            self._act_grad = None
+        if weight_init == 'xavier':
+            limit = np.sqrt(6.0 / (input_size + output_size))
+            self.W = np.random.uniform(-limit, limit, (input_size, output_size))
+        elif weight_init == 'zeros':
+            self.W = np.zeros((input_size, output_size))
         else:
-            self._act_fn, self._act_grad = get_activation(activation)
+            self.W = np.random.randn(input_size, output_size) * 0.01
 
+        self.b = np.zeros((1, output_size))
+
+        self.grad_W = np.zeros_like(self.W)
+        self.grad_b = np.zeros_like(self.b)
+
+        self.input = None
         self.Z = None
         self.A = None
-        self.A_prev = None
 
-        self.grad_W = None
-        self.grad_b = None
+    def forward(self, X):
+        self.input = X
+        self.Z = X @ self.W + self.b
 
-    def _init_weights(self):
-        if self.weight_init == "xavier":
-            std = np.sqrt(2 / (self.in_features + self.out_features))
-            W = np.random.randn(self.in_features, self.out_features) * std
-        
+        if self.activation_name in ACTIVATIONS:
+            self.A = ACTIVATIONS[self.activation_name](self.Z)
         else:
-            W = np.random.randn(self.in_features, self.out_features) * 0.01
-
-        b = np.zeros((1, self.out_features))
-        return W, b
-
-    def forward(self, A_prev):
-        self.A_prev = A_prev
-        self.Z = A_prev @ self.W + self.b
-
-        if self.activation_name == "output":
-            self.A = softmax(self.Z)
-        else:
-            self.A = self._act_fn(self.Z)
-
+            self.A = self.Z  # linear
         return self.A
 
     def backward(self, dA, weight_decay=0.0):
-        batch_size = self.A_prev.shape[0]
+        batch_size = self.input.shape[0]
 
-        if self.activation_name == "output":
-            dZ = dA
+        if self.activation_name in ACTIVATION_DERIVATIVES:
+            dZ = dA * ACTIVATION_DERIVATIVES[self.activation_name](self.Z)
         else:
-            dZ = dA * self._act_grad(self.Z)
-
-        self.grad_W = (self.A_prev.T @ dZ) / batch_size + weight_decay * self.W
-        self.grad_b = np.mean(dZ, axis=0, keepdims=True)
-
+            dZ = dA
+        self.grad_W = self.input.T @ dZ
+        self.grad_b = np.sum(dZ, axis=0, keepdims=True)
         dA_prev = dZ @ self.W.T
         return dA_prev
-
-    def get_params(self):
-        return {"W": self.W, "b": self.b}
-
-    def set_params(self, params):
-        self.W = params["W"]
-        self.b = params["b"]

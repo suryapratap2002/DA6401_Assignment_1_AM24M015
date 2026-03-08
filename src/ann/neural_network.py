@@ -1,71 +1,113 @@
-import json
 import numpy as np
-
-from ann.neural_layer import NeuralLayer
-from ann.objective_functions import get_loss
-
+from .neural_layer import Layer
+from .activations import softmax
+from .objective_functions import (
+    cross_entropy_loss, cross_entropy_grad,
+    mse_loss, mse_grad
+)
 
 class NeuralNetwork:
+    def __init__(self, input_size_or_config=None, hidden_sizes=None, output_size=None,
+                 activation='relu', weight_init='xavier', loss='cross_entropy',
+                 layer_sizes=None, optimizer=None, lr=None, weight_decay=0.0):
 
-    def __init__(self, input_size, hidden_sizes, output_size,
-                 activation="relu", weight_init="xavier", loss="cross_entropy"):
+        if isinstance(input_size_or_config, dict):
+            cfg = input_size_or_config
+        elif hasattr(input_size_or_config, '__dict__'):
+            cfg = vars(input_size_or_config) 
+        else:
+            cfg = None
 
-        self._loss_fn, self._loss_grad = get_loss(loss)
+        if cfg is not None:
+            input_size  = cfg.get('input_size', 784)
+            output_size = cfg.get('output_size', 10)
+            activation  = cfg.get('activation', 'relu')
+            weight_init = cfg.get('weight_init', 'xavier')
+            loss        = cfg.get('loss', 'cross_entropy')
 
-        sizes = [input_size] + hidden_sizes + [output_size]
+            hs = cfg.get('hidden_size', 128)
+            nl = cfg.get('num_layers', 3)
+            if isinstance(hs, list):
+                hidden_sizes = hs
+            else:
+                hidden_sizes = [hs] * nl
+
+
+        elif layer_sizes is not None:
+            input_size   = layer_sizes[0]
+            hidden_sizes = layer_sizes[1:-1]
+            output_size  = layer_sizes[-1]
+
+        else:
+            input_size = input_size_or_config
+
+        self.loss_name = loss
         self.layers = []
 
-        for i in range(len(sizes) - 1):
-            act = activation if i < len(sizes) - 2 else "output"
+        prev_size = input_size
+        for h_size in hidden_sizes:
             self.layers.append(
-                NeuralLayer(sizes[i], sizes[i+1], activation=act, weight_init=weight_init)
+                Layer(prev_size, h_size, activation=activation, weight_init=weight_init)
             )
+            prev_size = h_size
+        self.layers.append(
+            Layer(prev_size, output_size, activation='linear', weight_init=weight_init)
+        )
 
     def forward(self, X):
         out = X
         for layer in self.layers:
             out = layer.forward(out)
-        return out
-
-    def backward(self, y_pred, y_true, weight_decay=0.0):
-        grad = self._loss_grad(y_pred, y_true)
-
-        for layer in reversed(self.layers):
-            grad = layer.backward(grad, weight_decay)
-
-    def compute_loss(self, y_pred, y_true, weight_decay=0.0):
-        loss = self._loss_fn(y_pred, y_true)
-
-        if weight_decay:
-            for layer in self.layers:
-                loss += 0.5 * weight_decay * np.sum(layer.W ** 2)
-
-        return float(loss)
+        probs = softmax(out)
+        return probs, out  
 
     def predict(self, X):
-        probs = self.forward(X)
+
+        probs, _ = self.forward(X)
         return np.argmax(probs, axis=1)
 
+    def predict_classes(self, X):
+        return self.predict(X)
+
+    def predict_proba(self, X):
+        probs, _ = self.forward(X)
+        return probs
+
+    def compute_loss(self, logits, y_onehot):
+        if self.loss_name == 'cross_entropy':
+            return cross_entropy_loss(logits, y_onehot)
+        else:
+            return mse_loss(logits, y_onehot)
+
+    def backward(self, logits, y_onehot, weight_decay=0.0):
+        if self.loss_name == 'cross_entropy':
+            dA = cross_entropy_grad(logits, y_onehot)
+        else:
+            dA = mse_grad(logits, y_onehot)
+
+        for layer in reversed(self.layers):
+            dA = layer.backward(dA)
+
+        if weight_decay > 0.0:
+            for layer in self.layers:
+                layer.grad_W += weight_decay * layer.W
+
+    def get_weights(self):
+        return [(l.W.copy(), l.b.copy()) for l in self.layers]
+
+    def set_weights(self, weights):
+        if isinstance(weights, dict):
+            weights = [weights[i] for i in sorted(weights.keys())]
+        for layer, (W, b) in zip(self.layers, weights):
+            layer.W = W.copy()
+            layer.b = b.copy()
+
     def save(self, path):
-        params = {}
-        for i, layer in enumerate(self.layers):
-            params[f"W{i}"] = layer.W
-            params[f"b{i}"] = layer.b
-        np.save(path, params)
+        weights = {i: (l.W.copy(), l.b.copy()) for i, l in enumerate(self.layers)}
+        np.save(path, weights)
+        print(f"Model saved to {path}")
 
     def load(self, path):
-        params = np.load(path, allow_pickle=True).item()
-        for i, layer in enumerate(self.layers):
-            layer.W = params[f"W{i}"]
-            layer.b = params[f"b{i}"]
-
-    def save_config(self, path):
-        config = {"num_layers": len(self.layers)}
-        with open(path, "w") as f:
-            json.dump(config, f)
-
-    @classmethod
-    def from_config(cls, path):
-        with open(path) as f:
-            cfg = json.load(f)
-        return cfg
+        weights = np.load(path, allow_pickle=True).item()
+        self.set_weights([weights[i] for i in sorted(weights.keys())])
+        print(f"Model loaded from {path}")
